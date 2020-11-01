@@ -1,12 +1,14 @@
 package java0.conc0301.sync;
 
+import java.util.concurrent.atomic.AtomicInteger;
+
 public class Counter {
-    private int sum = 0;
+    private AtomicInteger sum = new AtomicInteger(0);
     public void incr() {
-        sum++;
+        sum.addAndGet(1);
     }
     public int getSum() {
-        return sum;
+        return sum.intValue();
     }
     
     public static void main(String[] args) throws InterruptedException {

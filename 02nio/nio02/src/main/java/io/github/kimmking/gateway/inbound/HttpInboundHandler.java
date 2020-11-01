@@ -1,6 +1,8 @@
 package io.github.kimmking.gateway.inbound;
 
 import io.github.kimmking.gateway.outbound.httpclient4.HttpOutboundHandler;
+import io.github.kimmking.gateway.outbound.netty4.NettyHttpClient;
+import io.github.kimmking.gateway.outbound.okhttp.OkhttpOutboundHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.handler.codec.http.FullHttpRequest;
@@ -13,10 +15,15 @@ public class HttpInboundHandler extends ChannelInboundHandlerAdapter {
     private static Logger logger = LoggerFactory.getLogger(HttpInboundHandler.class);
     private final String proxyServer;
     private HttpOutboundHandler handler;
+
+    private NettyHttpClient nettyHandler;
+
+    private OkhttpOutboundHandler okhttpOutboundHandler;
     
     public HttpInboundHandler(String proxyServer) {
         this.proxyServer = proxyServer;
         handler = new HttpOutboundHandler(this.proxyServer);
+        nettyHandler = new NettyHttpClient("127.0.0.1", 8089);
     }
     
     @Override
@@ -34,8 +41,9 @@ public class HttpInboundHandler extends ChannelInboundHandlerAdapter {
 //            if (uri.contains("/test")) {
 //                handlerTest(fullRequest, ctx);
 //            }
-    
-            handler.handle(fullRequest, ctx);
+
+            //handler.handle(fullRequest, ctx);
+            nettyHandler.handle(fullRequest, ctx);
     
         } catch(Exception e) {
             e.printStackTrace();
@@ -43,6 +51,8 @@ public class HttpInboundHandler extends ChannelInboundHandlerAdapter {
             ReferenceCountUtil.release(msg);
         }
     }
+
+
 
 //    private void handlerTest(FullHttpRequest fullRequest, ChannelHandlerContext ctx) {
 //        FullHttpResponse response = null;
