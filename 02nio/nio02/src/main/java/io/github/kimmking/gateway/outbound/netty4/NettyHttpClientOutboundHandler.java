@@ -32,39 +32,41 @@ public class NettyHttpClientOutboundHandler extends ChannelInboundHandlerAdapter
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
         FullHttpResponse response = null;
+        DefaultFullHttpResponse defaultFullHttpResponse = null;
         try {
             if (msg instanceof FullHttpResponse) {
                 System.out.println(111111);
-                FullHttpResponse response1 = (FullHttpResponse)msg;
-                ByteBuf buf = response1.content();
+                response = (FullHttpResponse) msg;
+                ByteBuf buf = response.content();
                 String result = buf.toString(CharsetUtil.UTF_8);
                 System.out.println("response -> "+result);
-                response = new DefaultFullHttpResponse(HTTP_1_1, OK, Unpooled.wrappedBuffer(result.getBytes("UTF-8")));
-                response.headers().set("Content-Type", "application/json");
-                response.headers().setInt("Content-Length", Integer.parseInt("65535"));
-
+                defaultFullHttpResponse = new DefaultFullHttpResponse(HttpVersion.HTTP_1_0, response.status(), Unpooled.wrappedBuffer(result.getBytes("UTF-8")));
+                defaultFullHttpResponse.headers().add(HttpHeaderNames.CONTENT_TYPE, "application/json");
+                defaultFullHttpResponse.headers().add(HttpHeaderNames.CONNECTION,HttpHeaderValues.KEEP_ALIVE);
+                defaultFullHttpResponse.headers().add(HttpHeaderNames.CONTENT_LENGTH, buf.readableBytes());
+            }
+            if (fullRequest != null) {
+                if (!HttpUtil.isKeepAlive(fullRequest)) {
+                    ctx1.write(defaultFullHttpResponse).addListener(ChannelFutureListener.CLOSE);
+                } else {
+                    ctx1.write(defaultFullHttpResponse);
+                }
             }
         } catch (Exception e) {
             e.printStackTrace();
         } finally {
-            if (fullRequest != null) {
-                if (!HttpUtil.isKeepAlive(fullRequest)) {
-                    ctx1.write(response).addListener(ChannelFutureListener.CLOSE);
-                } else {
-                    ctx1.write(response);
-                }
-            }
             ctx1.flush();
+
         }
     }
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
-        URI uri = new URI("http://127.0.0.1:8089/api/hello1");
+        URI uri = new URI("http://127.0.0.1:8088/api/hello");
         String msg = "Are you ok?";
         DefaultFullHttpRequest request = new DefaultFullHttpRequest(HttpVersion.HTTP_1_0, HttpMethod.GET, uri.toASCIIString());
         // 构建http请求
-        request.headers().add(HttpHeaderNames.CONNECTION,HttpHeaderValues.KEEP_ALIVE);
+        // request.headers().add(HttpHeaderNames.CONNECTION,HttpHeaderValues.CLOSE);
         request.headers().add(HttpHeaderNames.CONTENT_LENGTH,request.content().readableBytes());
         ctx.writeAndFlush(request);
     }

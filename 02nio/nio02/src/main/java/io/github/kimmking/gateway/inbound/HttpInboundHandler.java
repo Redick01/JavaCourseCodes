@@ -23,7 +23,7 @@ public class HttpInboundHandler extends ChannelInboundHandlerAdapter {
     public HttpInboundHandler(String proxyServer) {
         this.proxyServer = proxyServer;
         handler = new HttpOutboundHandler(this.proxyServer);
-        nettyHandler = new NettyHttpClient("127.0.0.1", 8089);
+        nettyHandler = new NettyHttpClient("127.0.0.1", 8088);
     }
     
     @Override
