@@ -8,8 +8,11 @@ import io.netty.util.CharsetUtil;
 import org.apache.http.util.EntityUtils;
 
 import java.net.URI;
+import java.util.List;
+import java.util.Map;
 
 import static io.netty.handler.codec.http.HttpResponseStatus.OK;
+import static io.netty.handler.codec.http.HttpVersion.HTTP_1_0;
 import static io.netty.handler.codec.http.HttpVersion.HTTP_1_1;
 
 public class NettyHttpClientOutboundHandler extends ChannelInboundHandlerAdapter {
@@ -18,9 +21,12 @@ public class NettyHttpClientOutboundHandler extends ChannelInboundHandlerAdapter
 
     private FullHttpRequest fullRequest;
 
-    public NettyHttpClientOutboundHandler(ChannelHandlerContext ctx1, FullHttpRequest fullRequest) {
+    private String backUrl;
+
+    public NettyHttpClientOutboundHandler(ChannelHandlerContext ctx1, FullHttpRequest fullRequest, String url) {
         this.ctx1 = ctx1;
         this.fullRequest = fullRequest;
+        this.backUrl = url.endsWith("/") ? url.substring(0, url.length() - 1) : url;
     }
 
     /**
@@ -35,14 +41,12 @@ public class NettyHttpClientOutboundHandler extends ChannelInboundHandlerAdapter
         DefaultFullHttpResponse defaultFullHttpResponse = null;
         try {
             if (msg instanceof FullHttpResponse) {
-                System.out.println(111111);
                 response = (FullHttpResponse) msg;
                 ByteBuf buf = response.content();
                 String result = buf.toString(CharsetUtil.UTF_8);
-                System.out.println("response -> "+result);
                 defaultFullHttpResponse = new DefaultFullHttpResponse(HttpVersion.HTTP_1_0, response.status(), Unpooled.wrappedBuffer(result.getBytes("UTF-8")));
                 defaultFullHttpResponse.headers().add(HttpHeaderNames.CONTENT_TYPE, "application/json");
-                defaultFullHttpResponse.headers().add(HttpHeaderNames.CONNECTION,HttpHeaderValues.KEEP_ALIVE);
+                defaultFullHttpResponse.headers().add(HttpHeaderNames.CONNECTION, HttpHeaderValues.KEEP_ALIVE);
                 defaultFullHttpResponse.headers().add(HttpHeaderNames.CONTENT_LENGTH, buf.readableBytes());
             }
             if (fullRequest != null) {
@@ -62,13 +66,22 @@ public class NettyHttpClientOutboundHandler extends ChannelInboundHandlerAdapter
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
-        URI uri = new URI("http://127.0.0.1:8088/api/hello");
-        String msg = "Are you ok?";
-        DefaultFullHttpRequest request = new DefaultFullHttpRequest(HttpVersion.HTTP_1_0, HttpMethod.GET, uri.toASCIIString());
-        // 构建http请求
-        // request.headers().add(HttpHeaderNames.CONNECTION,HttpHeaderValues.CLOSE);
-        request.headers().add(HttpHeaderNames.CONTENT_LENGTH,request.content().readableBytes());
-        ctx.writeAndFlush(request);
+        try {
+            URI uri = new URI(backUrl + fullRequest.uri());
+            // 获取Netty内置的请求头对象
+            HttpHeaders header = fullRequest.headers();
+            // 将包含的请求信息赋值到list中
+            List<Map.Entry<String, String>> list = header.entries();
+            DefaultFullHttpRequest request = new DefaultFullHttpRequest(HTTP_1_0, HttpMethod.GET, uri.toASCIIString());
+            for (Map.Entry<String, String> map : list) {
+                request.headers().add(map.getKey(), map.getValue());
+            }
+            request.setProtocolVersion(HTTP_1_0);
+            ctx.writeAndFlush(request);
+        } catch (Exception e) {
+            e.printStackTrace();
+            ctx.flush();
+        }
     }
 
     @Override
