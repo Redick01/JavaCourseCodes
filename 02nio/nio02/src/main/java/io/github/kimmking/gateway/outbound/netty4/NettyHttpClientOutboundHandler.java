@@ -44,8 +44,7 @@ public class NettyHttpClientOutboundHandler extends ChannelInboundHandlerAdapter
                 response = (FullHttpResponse) msg;
                 ByteBuf buf = response.content();
                 String result = buf.toString(CharsetUtil.UTF_8);
-                defaultFullHttpResponse = new DefaultFullHttpResponse(HttpVersion.HTTP_1_0, response.status(), Unpooled.wrappedBuffer(result.getBytes("UTF-8")));
-                defaultFullHttpResponse.headers().add(HttpHeaderNames.CONTENT_TYPE, "application/json");
+                defaultFullHttpResponse = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, response.status(), Unpooled.wrappedBuffer(result.getBytes("UTF-8")));
                 defaultFullHttpResponse.headers().add(HttpHeaderNames.CONNECTION, HttpHeaderValues.KEEP_ALIVE);
                 defaultFullHttpResponse.headers().add(HttpHeaderNames.CONTENT_LENGTH, buf.readableBytes());
             }
@@ -72,11 +71,10 @@ public class NettyHttpClientOutboundHandler extends ChannelInboundHandlerAdapter
             HttpHeaders header = fullRequest.headers();
             // 将包含的请求信息赋值到list中
             List<Map.Entry<String, String>> list = header.entries();
-            DefaultFullHttpRequest request = new DefaultFullHttpRequest(HTTP_1_0, HttpMethod.GET, uri.toASCIIString());
+            DefaultFullHttpRequest request = new DefaultFullHttpRequest(HTTP_1_1, HttpMethod.GET, uri.toASCIIString());
             for (Map.Entry<String, String> map : list) {
                 request.headers().add(map.getKey(), map.getValue());
             }
-            request.setProtocolVersion(HTTP_1_0);
             ctx.writeAndFlush(request);
         } catch (Exception e) {
             e.printStackTrace();

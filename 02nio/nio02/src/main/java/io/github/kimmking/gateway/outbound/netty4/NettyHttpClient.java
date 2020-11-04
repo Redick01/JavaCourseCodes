@@ -3,6 +3,7 @@ package io.github.kimmking.gateway.outbound.netty4;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.codec.http.*;
 
@@ -25,9 +26,9 @@ public class NettyHttpClient {
             //b.remoteAddress(host, port);
             b.channel(NioSocketChannel.class);
             b.option(ChannelOption.SO_KEEPALIVE, true);
-            b.handler(new ChannelInitializer<Channel>() {
+            b.handler(new ChannelInitializer<SocketChannel>() {
                 @Override
-                public void initChannel(Channel ch) throws Exception {
+                public void initChannel(SocketChannel ch) throws Exception {
                     //包含编码器和解码器
                     ch.pipeline().addLast(new HttpClientCodec());
                     //聚合
